@@ -1,0 +1,5 @@
+.env
+/src/bin
+/src/obj
+/core
+/*.sln
