@@ -1,33 +1,49 @@
+using System;
 using BepInEx;
-using BepInEx.Logging;
+using BepInEx.Configuration;
 using HarmonyLib;
 
-namespace PluginNamespace;
-
-[BepInPlugin(PluginInfo.GUID, PluginInfo.Name, PluginInfo.Version)]
-public class Plugin : BasePlugin
+namespace LumaPlayerLimit
 {
-    public static new ManualLogSource Logger { get; private set; } = null!;
-    public static Harmony? Harmony { get; private set; }
-
-    public override void Load()
+    [BepInProcess("Luma Island.exe")]
+    [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
+    public sealed class Plugin : BaseUnityPlugin
     {
-        Logger = base.Logger;
-        Harmony = new Harmony(PluginInfo.GUID);
-        Harmony.PatchAll();
-        Logger.LogInfo($"Loaded {PluginInfo.GUID}");
-    }
+        public const string PluginGuid = "lumaisland.playerlimit";
+        public const string PluginName = "Luma Player Limit";
+        public const string PluginVersion = "0.3.0";
 
-    public override void Unload()
-    {
-        Harmony?.UnpatchAll();
-        base.Unload();
-    }
-}
+        internal static Plugin Instance;
+        internal static ConfigEntry<int> MaxPlayers;
+        internal static BepInEx.Logging.ManualLogSource Log => Instance?.Logger;
 
-internal static class PluginInfo
-{
-    public const string GUID = "PluginNamespace.Plugin";
-    public const string Name = "PluginName";
-    public const string Version = "1.0.0";
+        private Harmony _harmony;
+
+        private void Awake()
+        {
+            Instance = this;
+
+            MaxPlayers = Config.Bind(
+                "General",
+                "MaxPlayers",
+                8,
+                new ConfigDescription(
+                    "Desired multiplayer cap. The stock game is built for 4 players, so keep this reasonable.",
+                    new AcceptableValueRange<int>(4, 32)));
+
+            _harmony = new Harmony(PluginGuid);
+
+            Patches.JoinGameRow.Patch(_harmony);
+            Patches.LobbyUtility.Patch(_harmony);
+            Patches.SteamLobbyController.Patch(_harmony);
+
+            Logger.LogInfo(string.Format("{0} loaded. MaxPlayers={1}", PluginName, GetConfiguredMaxPlayers()));
+        }
+
+        internal static int GetConfiguredMaxPlayers()
+        {
+            var configured = MaxPlayers != null ? MaxPlayers.Value : 8;
+            return Math.Max(4, configured);
+        }
+    }
 }

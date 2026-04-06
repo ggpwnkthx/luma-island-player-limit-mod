@@ -12,11 +12,15 @@ BEPINEX_URL="${BEPINEX_URL:-https://github.com/BepInEx/BepInEx/releases/download
 find_managed_dir() {
     local result
     result="$(find "$GAME_PATH" -name "UnityEngine.dll" -type f 2>/dev/null | head -1)"
+    if [[ -z "$result" ]]; then
+        return 1
+    fi
     dirname "$result"
 }
 
 game_is_installed() {
-    [[ -n "$(find_managed_dir)" ]]
+    local managed_dir
+    managed_dir="$(find_managed_dir)" && [[ -d "$managed_dir" ]]
 }
 
 bepinex_is_installed() {
@@ -118,8 +122,15 @@ download_game() {
         echo "Retrying with Steam user credentials..."
         attempt_download "$STEAM_USER" "$STEAM_USER" "$STEAM_PASS" && return 0
     elif [[ -n "${STEAM_USER:-}" ]]; then
-        echo "Retrying with Steam user login..."
-        attempt_download "$STEAM_USER" "$STEAM_USER" && return 0
+        echo "STEAM_USER is set but STEAM_PASS is not."
+        echo -n "Enter your Steam password: " >&2
+        read -s STEAM_PASS
+        echo >&2
+        if [[ -z "${STEAM_PASS:-}" ]]; then
+            echo "No password entered. Exiting." >&2
+            exit 1
+        fi
+        attempt_download "$STEAM_USER" "$STEAM_USER" "$STEAM_PASS" && return 0
     fi
 
     echo "Unable to download app $STEAM_APP_ID." >&2

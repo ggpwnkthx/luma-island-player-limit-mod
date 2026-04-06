@@ -1,112 +1,88 @@
-# BepInEx Mod Development Container
+# Luma Island Player Limit
 
-A ready-to-use development environment for building [BepInEx](https://github.com/BepInEx/BepInEx) mods for Unity games, powered by [OpenCode](https://opencode.ai).
+BepInEx + Harmony mod that raises the Steam lobby player cap from 4 to a configurable value for `Luma Island.exe`.
 
-## What's Included
+## How it works
 
-- **.devcontainer/** - Dev Container configuration with:
-  - .NET SDK (2/8.0)
-  - SteamCMD for downloading game files
-  - OpenCode AI assistant pre-installed
-  - VS Code extensions for C# development
+The mod resolves types and members at runtime via `AccessTools.TypeByName()` so it survives game updates. All game-side calls are intercepted through a centralized `Reflect` helper rather than compile-time references.
 
-- **.opencode/** - OpenCode configuration and dependencies
+Five patches are applied via Harmony:
 
-- **src/** - Plugin source code (replace with your mod)
+| Patch | Type | Effect |
+|-------|------|--------|
+| `SteamLobbyController.CreateLobby` | Transpiler | Replaces hardcoded `4` with `GetConfiguredMaxPlayers()` at lobby creation |
+| `SteamLobbyController.HostUpdatePlayerCount` | Prefix | Sets lobby joinable/full state via `SetLobbyJoinable`; updates `numPlayers` lobby data |
+| `SteamLobbyController.OnReceiveLobbyData` | Transpiler | Replaces hardcoded `4` full-lobby check so larger lobbies aren't marked full remotely |
+| `LobbyUtility.CanInvite` | Prefix | Invites allowed when `activePlayerCount < MaxPlayers` and friend is not already in a game with host |
+| `JoinGameRow.Initialize` | Postfix | Updates lobby row text from `x / 4` to `x / MaxPlayers`; enables join button unless version mismatch |
+| `JoinGameRow.OnJoinGame` | Prefix | Blocks join on version mismatch; otherwise calls `JoinLobby` via reflection |
 
-- **build.sh** - Build script that:
-  1. Downloads the target Unity game via SteamCMD
-  2. Installs BepInEx into the game directory
-  3. Builds the plugin against game assemblies
+## Config
 
-## Quick Start
+- `MaxPlayers`: integer, default `8`, range `4`–`32`
+- The effective cap is always at least `4` (`Math.Max(4, configured)`), even if the config is set lower
+- Generated at `BepInEx\config\LumaPlayerLimit.cfg` on first run
 
-### 1. Open in Dev Container
+## Source layout
 
-Open this repository in VS Code and click **"Reopen in Container"** when prompted. The dev container will:
-- Install SteamCMD
-- Download and set up the game
-- Install OpenCode
-
-### 2. Configure Your Mod
-
-Edit the following files for your mod:
-
-| File | Purpose |
-|------|---------|
-| `src/Plugin.cs` | Your BepInEx plugin code |
-| `src/Plugin.csproj` | Project file (update assembly name, references) |
-
-### 3. Environment Variables
-
-Create a `.env` file in the project root (or set these environment variables):
-
-```env
-STEAM_APP_ID=1234567       # Your game's Steam App ID
-STEAM_USER=your_username   # Optional: for authenticated downloads
-STEAM_PASS=your_password   # Optional: for authenticated downloads
+```
+src/
+├── Plugin.cs              — BepInEx entry point; binds config; registers patches
+├── Core.cs                — Shared `PatchNamedMethod` helper (centralized Harmony patching)
+├── Reflect.cs             — Reflection access for static/instance members, methods, and properties
+├── TranspilerHelpers.cs   — IL analysis utilities (stack simulation, pattern matching, signature tracking)
+└── patches/
+    ├── SteamLobbyController.cs  — Lobby creation, host update, and remote lobby-data patches
+    ├── LobbyUtility.cs          — Invite eligibility patch
+    └── JoinGameRow.cs           — Lobby row text and join button patches
 ```
 
-### 4. Build
+## Transpiler behavior
+
+The `CreateLobby` and `OnReceiveLobbyData` transpilers perform runtime IL analysis:
+
+1. Locate all `ldc.i4 4` instructions in the target method
+2. Inspect subsequent IL to distinguish lobby-cap constants from unrelated constants (e.g., array sizes)
+3. Only replace constants that are followed by lobby-related calls (`CreateLobby`, `SetLobbyData`) or comparison ops (`Clt`, `Cgt`, etc.)
+4. Validate stack depth before applying each replacement to avoid breaking the method's IL logic
+5. Track a signature baseline for each method; if the game updates and the IL signature similarity drops below 70%, a warning is logged but the patch is still attempted
+
+This makes the mod resilient against many game updates without requiring immediate patches.
+
+## Build
+
+### Prerequisites
+
+- SteamCMD installed (for downloading the game)
+- `STEAM_APP_ID` environment variable
+- On Windows: .NET SDK with `dotnet` CLI, or Visual Studio 2022
+- On Linux/macOS: .NET SDK with `dotnet` CLI and `steamcmd`
+- Game DLLs resolved from the Steam installation at build time
+
+### Build script (Linux/macOS)
 
 ```sh
 ./build.sh
 ```
 
-Or manually with dotnet:
+The script downloads the game via steamcmd if not present, installs BepInEx, then builds the plugin.
+
+### Build with dotnet CLI directly (Windows or manual)
 
 ```sh
-dotnet restore src/Plugin.csproj -p:GamePath="/path/to/game" -p:ManagedDir="/path/to/game/Game_Data/Managed"
-dotnet build src/Plugin.csproj -c Release --no-restore -p:GamePath="/path/to/game" -p:ManagedDir="/path/to/game/Game_Data/Managed"
+dotnet restore src/Plugin.csproj -p:GamePath="C:\path\to\Luma Island" -p:ManagedDir="C:\path\to\Luma Island\Luma Island_Data\Managed"
+dotnet build src/Plugin.csproj -c Release --no-restore -p:GamePath="C:\path\to\Luma Island" -p:ManagedDir="C:\path\to\Luma Island\Luma Island_Data\Managed"
 ```
 
-Output: `src/bin/Release/net472/YourMod.dll`
-
-## Project Structure
+Output:
 
 ```
-.
-├── .devcontainer/
-│   ├── Dockerfile          # Dev container image definition
-│   └── devcontainer.json   # Dev container settings
-├── .opencode/
-│   ├── package.json        # OpenCode dependencies
-│   └── settings.json       # OpenCode configuration
-├── src/
-│   ├── Plugin.cs           # BepInEx plugin with Harmony patches
-│   └── Plugin.csproj       # .NET Framework 4.7.2 project
-├── build.sh                # Automated build script
-└── .env                    # Environment variables (create this)
+src/bin/Release/net472/LumaPlayerLimit.dll
 ```
 
-## Using OpenCode
+### Dev Container
 
-Once inside the dev container, OpenCode is available as your AI coding assistant. You can:
-
-- Ask questions about the codebase
-- Generate new patches or features
-- Debug issues with your mod
-- Refactor and improve code
-
-OpenCode reads the `.opencode/` configuration and uses the project context to provide relevant assistance.
-
-## Dev Container Features
-
-The dev container automatically:
-- Installs SteamCMD for game download
-- Sets up .NET SDK with support for game DLL references
-- Configures OpenCode with project-aware context
-- Provides VS Code extensions for C# development
-
-### Customizing the Container
-
-To use a Unity game, update `build.sh`:
-
-```bash
-STEAM_APP_ID=1234567
-```
-
-To use Steam login instead of anonymous:
+The `.devcontainer/Dockerfile` automatically installs steamcmd and Luma Island. To use authenticated login (if anonymous fails for your account):
 
 ```json
 {
@@ -118,12 +94,12 @@ To use Steam login instead of anonymous:
 }
 ```
 
-## Installing Your Mod
+## Install
 
-Copy the built DLL to your game's BepInEx plugins folder:
+Copy `src/bin/Release/net472/LumaPlayerLimit.dll` into:
 
 ```
-<Game Installation>/BepInEx/plugins/YourMod.dll
+Luma Island\BepInEx\plugins\
 ```
 
-Launch the game once to generate the config file at `BepInEx/config/`, then edit it to customize your mod's settings.
+Launch once, then edit the generated config file in `BepInEx\config` if you want a different cap.

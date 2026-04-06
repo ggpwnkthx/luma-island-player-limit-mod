@@ -11,6 +11,9 @@
 		"--env-file",
 		"${localWorkspaceFolder}/.env"
 	],
+	"remoteEnv": {
+		"STEAM_APP_ID": "2408820"
+	},
 	"customizations": {
 		"vscode": {
 			"extensions": [

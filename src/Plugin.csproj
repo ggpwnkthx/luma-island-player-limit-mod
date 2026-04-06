@@ -1,18 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
-    <AssemblyName>Plugin</AssemblyName>
-    <RootNamespace>PluginNamespace</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>LumaPlayerLimit</AssemblyName>
+    <RootNamespace>LumaPlayerLimit</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BepInEx.BaseLib" Version="5.4.23" />
-    <PackageReference Include="BepInEx.PluginInfoTraits" Version="2.0.1" />
-    <PackageReference Include="HarmonyX" Version="2.3.3" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Reference Include="BepInEx">
+      <HintPath>$(GamePath)/BepInEx/core/BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(GamePath)/BepInEx/core/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>$(ManagedDir)/UnityEngine.dll</HintPath>
       <Private>false</Private>
@@ -21,8 +25,12 @@
       <HintPath>$(ManagedDir)/UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>$(ManagedDir)/Assembly-CSharp.dll</HintPath>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedDir)/UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(ManagedDir)/UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
