@@ -42,22 +42,22 @@ namespace LumaPlayerLimit.Patches
         {
             try
             {
-                var hasCreatedLobby = Reflect.GetBool(__instance, "HasCreatedLobby", false);
-                var isLobbyOwner = Reflect.GetBool(__instance, "isLobbyOwner", false);
+                var hasCreatedLobby = Reflect.GetFieldBool(__instance, "HasCreatedLobby", false);
+                var isLobbyOwner = Reflect.GetFieldBool(__instance, "isLobbyOwner", false);
 
                 if (!hasCreatedLobby || !isLobbyOwner)
                 {
                     return false;
                 }
 
-                var lobbyId = Reflect.GetMemberValue(__instance, "lobbyID");
+                var lobbyId = Reflect.GetFieldValue(__instance, "lobbyID");
                 if (lobbyId == null)
                 {
                     Plugin.Log.LogWarning("SteamLobbyController.HostUpdatePlayerCount: lobbyID was null.");
                     return false;
                 }
 
-                var stateAllowsJoining = Reflect.GetBool(__instance, "State", false);
+                var stateAllowsJoining = Reflect.GetFieldBool(__instance, "State", false);
                 var isFull = playerCount >= Plugin.GetConfiguredMaxPlayers();
 
                 if (stateAllowsJoining)

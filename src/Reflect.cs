@@ -45,6 +45,18 @@ namespace LumaPlayerLimit
             return field != null ? field.GetValue(target) : null;
         }
 
+        public static object GetFieldValue(object target, string fieldName)
+        {
+            if (target == null)
+            {
+                return null;
+            }
+
+            var type = target.GetType();
+            var field = AccessTools.Field(type, fieldName);
+            return field != null ? field.GetValue(target) : null;
+        }
+
         public static bool SetMemberValue(object target, string memberName, object value)
         {
             if (target == null)
@@ -73,6 +85,24 @@ namespace LumaPlayerLimit
         public static bool GetBool(object target, string memberName, bool fallback)
         {
             var value = GetMemberValue(target, memberName);
+            if (value == null)
+            {
+                return fallback;
+            }
+
+            try
+            {
+                return Convert.ToBoolean(value);
+            }
+            catch
+            {
+                return fallback;
+            }
+        }
+
+        public static bool GetFieldBool(object target, string fieldName, bool fallback)
+        {
+            var value = GetFieldValue(target, fieldName);
             if (value == null)
             {
                 return fallback;

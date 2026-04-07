@@ -1,6 +1,22 @@
 # Luma Island Player Limit
 
-BepInEx + Harmony mod that raises the Steam lobby player cap from 4 to a configurable value for `Luma Island.exe`.
+Raises the Steam lobby player cap from 4 to a configurable value for `Luma Island.exe`.
+
+## Install
+
+### Windows
+1. Install **BepInEx 5.x** by extracting [**`BepInEx_win_x64_5.4.23.5.zip`**](https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5) from the BepInEx releases page into your **Luma Island** game folder.
+2. Copy **`LumaPlayerLimit.dll`** to **`Luma Island/BepInEx/plugins/`**.
+3. Launch the game once to generate **`Luma Island/BepInEx/config/LumaPlayerLimit.cfg`**.
+4. Optional: edit **`MaxPlayers`** in that file to any value from **4–32**. The default is **8**.
+
+### Linux / macOS (Proton or Wine)
+1. Install **BepInEx 5.x** into the game's **Windows** directory exactly as you would on Windows.
+2. In Steam, set this launch option:
+   `WINEDLLOVERRIDES="winhttp.dll=n,b" %command%`
+3. Copy **`LumaPlayerLimit.dll`** to **`Luma Island/BepInEx/plugins/`**.
+4. Launch the game once to generate **`Luma Island/BepInEx/config/LumaPlayerLimit.cfg`**.
+5. Optional: edit **`MaxPlayers`** in that file to any value from **4–32**. The default is **8**.
 
 ## How it works
 
@@ -93,13 +109,3 @@ The `.devcontainer/Dockerfile` automatically installs steamcmd and Luma Island. 
   }
 }
 ```
-
-## Install
-
-Copy `src/bin/Release/net472/LumaPlayerLimit.dll` into:
-
-```
-Luma Island\BepInEx\plugins\
-```
-
-Launch once, then edit the generated config file in `BepInEx\config` if you want a different cap.

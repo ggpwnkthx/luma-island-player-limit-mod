@@ -11,7 +11,7 @@ namespace LumaPlayerLimit
     {
         public const string PluginGuid = "lumaisland.playerlimit";
         public const string PluginName = "Luma Player Limit";
-        public const string PluginVersion = "0.3.0";
+        public const string PluginVersion = "0.1.1";
 
         internal static Plugin Instance;
         internal static ConfigEntry<int> MaxPlayers;
